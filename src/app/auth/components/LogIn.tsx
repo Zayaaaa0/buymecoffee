@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 const formSchema = z.object({
   email: z.string().min(2, {
@@ -33,9 +34,9 @@ export default function LogIn() {
   }
   return (
     <div className="p-[24px] justify-center flex flex-col">
-      <div className="justify-end flex">
-        <Button variant="secondary">Sign Up</Button>
-      </div>
+      <Link href={"/auth/sign-up"}>
+        <Button variant="outline">Sign Up</Button>
+      </Link>
       <div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
