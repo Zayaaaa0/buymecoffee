@@ -121,13 +121,6 @@ export default function SignUp() {
                   </FormItem>
                 )}
               />
-              {/* <InputForm
-                placeholder="Enter password here"
-                type="password"
-                name="password"
-                label="password"
-                form={emailPasswordForm}
-              /> */}
 
               <Button type="submit">Submit</Button>
             </form>
