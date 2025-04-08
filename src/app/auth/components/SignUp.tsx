@@ -1,132 +1,186 @@
 "use client";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormField,
+  FormLabel,
+  FormItem,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
+
+// Schema
 const usernameSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
+  username: z.string().min(2, "Username must be at least 2 characters."),
 });
 
 const emailPasswordSchema = z.object({
-  email: z.string().min(12, {
-    message: "Username must be at least 12 characters.",
-  }),
-  password: z.string().min(6, {
-    message: "Username must be at least 6 characters.",
-  }),
+  email: z.string().email("Please enter a valid email address."),
+  password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
 export default function SignUp() {
   const [step, setStep] = useState(1);
   const [username, setUsername] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // Username form
   const usernameForm = useForm<z.infer<typeof usernameSchema>>({
     resolver: zodResolver(usernameSchema),
-    defaultValues: {
-      username: "",
-    },
+    defaultValues: { username: "" },
   });
+
+  // Email/Password form
   const emailPasswordForm = useForm<z.infer<typeof emailPasswordSchema>>({
     resolver: zodResolver(emailPasswordSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   function handleUsernameSubmit(values: z.infer<typeof usernameSchema>) {
-    console.log(values.username);
-    emailPasswordForm.reset();
+    setUsername(values.username);
     setStep(2);
+    setError(null);
   }
-  function handleFinalSubmit(values: z.infer<typeof emailPasswordSchema>) {
-    console.log({ username, ...values });
-    router.push("auth/log-in");
+
+  async function handleFinalSubmit(
+    values: z.infer<typeof emailPasswordSchema>
+  ) {
+    try {
+      const response = await fetch("/api/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, ...values }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to register user");
+      }
+
+      const data = await response.json();
+      console.log("Registered user:", data);
+      router.push("/auth/log-in");
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Signup failed. Please try again.");
+    }
   }
+
   return (
-    <div className="p-[24px] justify-center flex flex-col">
-      <Link href={"/auth/log-in"}>
-        <Button variant="outline">Log in</Button>
-      </Link>
-      {step === 1 ? (
-        <div>
+    <div className="p-6 flex flex-col justify-center items-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md">
+        <Link href="/auth/log-in">
+          <Button variant="outline" className="mb-4 w-full">
+            Log in
+          </Button>
+        </Link>
+
+        {step === 1 ? (
           <Form {...usernameForm}>
             <form
               onSubmit={usernameForm.handleSubmit(handleUsernameSubmit)}
-              className="space-y-8"
+              className="space-y-6 bg-white p-6 rounded-xl shadow"
             >
+              <p className="text-2xl font-semibold text-center">
+                Create Your Account
+              </p>
+              <FormDescription className="text-center">
+                Choose a username for your page
+              </FormDescription>
+
               <FormField
                 control={usernameForm.control}
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <p className="font-semibold text-[24px]">
-                      Create Your Account
-                    </p>
-                    <FormDescription>
-                      Choose a username for your page
-                    </FormDescription>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
+                      <Input placeholder="Enter username here" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit" className="w-full">
+                Continue
+              </Button>
+            </form>
+          </Form>
+        ) : (
+          <Form {...emailPasswordForm}>
+            <form
+              onSubmit={emailPasswordForm.handleSubmit(handleFinalSubmit)}
+              className="space-y-6 bg-white p-6 rounded-xl shadow"
+            >
+              <div className="text-center">
+                <h1 className="text-2xl font-bold">Welcome, {username}</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  Connect your email and set a password
+                </p>
+              </div>
+
+              {error && (
+                <div className="text-red-500 text-center">
+                  <p>{error}</p>
+                </div>
+              )}
+
+              <FormField
+                control={emailPasswordForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
                       <Input
-                        placeholder="Enter username here"
-                        name="username"
+                        value={email}
+                        type="email"
+                        placeholder="Enter email here"
+                        {...field} // 🟢 энэ хамгийн чухал
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit">Continue</Button>
-            </form>
-          </Form>
-        </div>
-      ) : (
-        <div>
-          <div>
-            <h3>Welcome,{username}</h3>
-            <p>Connect email and set a password</p>
-          </div>
-          <Form {...emailPasswordForm}>
-            <form
-              onSubmit={emailPasswordForm.handleSubmit(handleFinalSubmit)}
-              className="space-y-8"
-            >
+
               <FormField
                 control={emailPasswordForm.control}
-                name={"email"}
+                name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter email here" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="Enter password here"
+                        {...field} // 🟢 мөн адил
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="submit">Submit</Button>
+              <Button type="submit" className="w-full">
+                Sign Up
+              </Button>
             </form>
           </Form>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

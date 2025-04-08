@@ -1,9 +1,10 @@
+import LoginForm from "../components/LogIn";
 import LogIn from "../components/LogIn";
 
 const login = () => {
   return (
     <div>
-      <LogIn />
+      <LoginForm />
     </div>
   );
 };
